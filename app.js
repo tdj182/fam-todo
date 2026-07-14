@@ -36,6 +36,8 @@ whoInput.addEventListener("input", () => {
 
 refreshBtn.addEventListener("click", load);
 
+const addBtn = addForm.querySelector(".add-btn");
+
 addForm.addEventListener("submit", async e => {
   e.preventDefault();
   const text = textInput.value.trim();
@@ -43,13 +45,22 @@ addForm.addEventListener("submit", async e => {
 
   const due_at = dueInput.value ? new Date(dueInput.value).toISOString() : "";
 
-  await addTask({ text, category: selectedCategory, who: selectedWho, due_at });
+  addBtn.disabled = true;
+  addBtn.textContent = "Adding...";
 
-  textInput.value = "";
-  dueInput.value = "";
-  whoInput.value = "";
-  selectedWho = "";
-  document.querySelectorAll(".who-btn").forEach(b => b.classList.remove("active"));
+  try {
+    await addTask({ text, category: selectedCategory, who: selectedWho, due_at });
+    textInput.value = "";
+    dueInput.value = "";
+    whoInput.value = "";
+    selectedWho = "";
+    document.querySelectorAll(".who-btn").forEach(b => b.classList.remove("active"));
+  } catch (err) {
+    console.error("Failed to add task", err);
+  } finally {
+    addBtn.disabled = false;
+    addBtn.textContent = "Add task";
+  }
 
   load();
 });
@@ -87,7 +98,16 @@ function renderItem(task) {
   checkbox.type = "checkbox";
   checkbox.checked = done;
   checkbox.addEventListener("change", async () => {
-    await toggleTask(task.id, checkbox.checked);
+    const next = checkbox.checked;
+    setBusy(true);
+    try {
+      await toggleTask(task.id, next);
+    } catch (err) {
+      console.error("Failed to toggle task", err);
+      checkbox.checked = !next;
+      setBusy(false);
+      return;
+    }
     load();
   });
 
@@ -123,9 +143,23 @@ function renderItem(task) {
   deleteBtn.textContent = "✕";
   deleteBtn.title = "Delete";
   deleteBtn.addEventListener("click", async () => {
-    await deleteTask(task.id);
+    setBusy(true);
+    try {
+      await deleteTask(task.id);
+    } catch (err) {
+      console.error("Failed to delete task", err);
+      setBusy(false);
+      return;
+    }
     load();
   });
+
+  function setBusy(busy) {
+    li.classList.toggle("pending", busy);
+    checkbox.disabled = busy;
+    deleteBtn.disabled = busy;
+    deleteBtn.innerHTML = busy ? '<span class="spinner"></span>' : "✕";
+  }
 
   li.appendChild(checkbox);
   li.appendChild(main);
@@ -148,11 +182,14 @@ function formatDue(iso) {
 }
 
 async function load() {
+  refreshBtn.classList.add("spinning");
   try {
     tasks = await getTasks();
     render();
   } catch (err) {
     console.error("Failed to load tasks", err);
+  } finally {
+    refreshBtn.classList.remove("spinning");
   }
 }
 
