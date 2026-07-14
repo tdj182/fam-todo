@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Todo</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Family Todo</h1>
+    <button id="refresh-btn" title="Refresh">&#8635;</button>
+  </header>
+
+  <form id="add-form" class="add-form">
+    <input id="text-input" type="text" placeholder="Add a task..." required>
+
+    <div class="row">
+      <div class="category-toggle">
+        <button type="button" class="cat-btn active" data-category="regular">Regular</button>
+        <button type="button" class="cat-btn" data-category="big">Big</button>
+      </div>
+      <input id="due-input" type="datetime-local">
+    </div>
+
+    <div class="row who-row">
+      <div class="who-buttons" id="who-buttons">
+        <button type="button" class="who-btn" data-who="Ty">Ty</button>
+        <button type="button" class="who-btn" data-who="Kari">Kari</button>
+        <button type="button" class="who-btn" data-who="Olivia">Olivia</button>
+        <button type="button" class="who-btn" data-who="family">family</button>
+        <button type="button" class="who-btn" data-who="parents">parents</button>
+      </div>
+      <input id="who-input" type="text" placeholder="who? (or pick above)">
+    </div>
+
+    <button type="submit" class="add-btn">Add task</button>
+  </form>
+
+  <section class="task-section">
+    <h2>Regular</h2>
+    <ul id="regular-list" class="task-list"></ul>
+  </section>
+
+  <section class="task-section">
+    <h2>Big</h2>
+    <ul id="big-list" class="task-list"></ul>
+  </section>
+
+  <label class="show-completed">
+    <input type="checkbox" id="show-completed-toggle">
+    Show completed
+  </label>
+</div>
+
+<script src="api.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
