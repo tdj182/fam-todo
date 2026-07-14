@@ -4,7 +4,6 @@ const POLL_INTERVAL_MS = 20000;
 let tasks = [];
 let selectedCategory = "regular";
 let selectedWho = "";
-let showCompleted = false;
 
 const regularList = document.getElementById("regular-list");
 const bigList = document.getElementById("big-list");
@@ -13,7 +12,6 @@ const textInput = document.getElementById("text-input");
 const dueInput = document.getElementById("due-input");
 const whoInput = document.getElementById("who-input");
 const whoButtons = document.getElementById("who-buttons");
-const showCompletedToggle = document.getElementById("show-completed-toggle");
 const refreshBtn = document.getElementById("refresh-btn");
 
 document.querySelectorAll(".cat-btn").forEach(btn => {
@@ -34,11 +32,6 @@ whoButtons.addEventListener("click", e => {
 whoInput.addEventListener("input", () => {
   selectedWho = whoInput.value;
   document.querySelectorAll(".who-btn").forEach(b => b.classList.toggle("active", b.dataset.who === selectedWho));
-});
-
-showCompletedToggle.addEventListener("change", () => {
-  showCompleted = showCompletedToggle.checked;
-  render();
 });
 
 refreshBtn.addEventListener("click", load);
@@ -67,10 +60,9 @@ function render() {
 }
 
 function renderList(el, items) {
-  const visible = showCompleted ? items : items.filter(t => !isDone(t));
   el.innerHTML = "";
 
-  if (visible.length === 0) {
+  if (items.length === 0) {
     const li = document.createElement("li");
     li.className = "empty-state";
     li.textContent = "Nothing here";
@@ -78,7 +70,7 @@ function renderList(el, items) {
     return;
   }
 
-  visible
+  items
     .slice()
     .sort((a, b) => Number(isDone(a)) - Number(isDone(b)))
     .forEach(task => el.appendChild(renderItem(task)));

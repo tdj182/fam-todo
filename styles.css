@@ -242,12 +242,3 @@ h1 {
   font-size: 0.9rem;
   padding: 8px 0;
 }
-
-.show-completed {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 0.9rem;
-  cursor: pointer;
-}
