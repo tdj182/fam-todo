@@ -12,6 +12,7 @@
 
 const BASE_URL = "https://script.google.com/macros/s/AKfycbxCW36ESXwaoJHZmOXRJsJ6fc0hme6TInILJO01mvZ4r2LkpoUtfLdVeTx15dB7xrAduQ/exec";
 const TOKEN = "7wheW5VA4Wyxx_8XnUg1wEtIZ1PbQCVX";
+const WEBSITE_URL = "https://tdj182.github.io/fam-todo/";
 const WHO_OPTIONS = ["Ty", "Kari", "Olivia", "family", "parents"];
 
 async function getTasks() {
@@ -123,6 +124,24 @@ async function createWidget() {
 }
 
 async function showTable() {
+  const table = new UITable();
+  table.showSeparators = true;
+  let rows = [];
+
+  const reload = async () => {
+    for (const row of rows) table.removeRow(row);
+    rows = await buildRows(reload);
+    for (const row of rows) table.addRow(row);
+    table.reload();
+  };
+
+  rows = await buildRows(reload);
+  for (const row of rows) table.addRow(row);
+
+  await table.present();
+}
+
+async function buildRows(reload) {
   let tasks;
   try {
     tasks = await getTasks();
@@ -132,40 +151,47 @@ async function showTable() {
     alert.message = "Failed to load tasks: " + e.message;
     alert.addAction("OK");
     await alert.presentAlert();
-    return;
+    return [];
   }
 
-  const table = new UITable();
-  table.showSeparators = true;
+  const rows = [];
+
+  const linkRow = new UITableRow();
+  linkRow.dismissOnSelect = true;
+  linkRow.addText("🌐 Open Website");
+  linkRow.onSelect = () => Safari.open(WEBSITE_URL);
+  rows.push(linkRow);
 
   const addRow = new UITableRow();
   addRow.dismissOnSelect = false;
   addRow.addText("➕ Add Task");
   addRow.onSelect = async () => {
     await addTaskFlow();
-    await showTable();
+    await reload();
   };
-  table.addRow(addRow);
+  rows.push(addRow);
 
-  addSection(table, "Regular", tasks.filter(t => t.category === "regular"));
-  addSection(table, "Big", tasks.filter(t => t.category === "big"));
+  rows.push(...buildSection("Regular", tasks.filter(t => t.category === "regular"), reload));
+  rows.push(...buildSection("Big", tasks.filter(t => t.category === "big"), reload));
 
-  await table.present();
+  return rows;
 }
 
-function addSection(table, label, items) {
+function buildSection(label, items, reload) {
+  const rows = [];
+
   const header = new UITableRow();
   header.isHeader = true;
   header.addText(label);
-  table.addRow(header);
+  rows.push(header);
 
   const sorted = items.slice().sort((a, b) => Number(isDone(a)) - Number(isDone(b)));
 
   if (sorted.length === 0) {
     const row = new UITableRow();
     row.addText("Nothing here").titleColor = Color.gray();
-    table.addRow(row);
-    return;
+    rows.push(row);
+    return rows;
   }
 
   for (const task of sorted) {
@@ -191,11 +217,13 @@ function addSection(table, label, items) {
 
     row.onSelect = async () => {
       await taskActionFlow(task);
-      await showTable();
+      await reload();
     };
 
-    table.addRow(row);
+    rows.push(row);
   }
+
+  return rows;
 }
 
 async function taskActionFlow(task) {
