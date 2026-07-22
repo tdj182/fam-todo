@@ -148,6 +148,29 @@ h1 {
   cursor: pointer;
 }
 
+.filter-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.filter-btn {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.filter-btn.active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
+}
+
 .task-section { margin-bottom: 24px; }
 
 .task-section h2 {
@@ -234,6 +257,7 @@ h1 {
   font-weight: 600;
 }
 
+.edit-btn,
 .delete-btn {
   background: none;
   border: none;
@@ -244,13 +268,69 @@ h1 {
   flex-shrink: 0;
 }
 
+.edit-btn:hover { color: var(--accent); }
 .delete-btn:hover { color: var(--overdue); }
 
+.edit-btn:disabled,
 .delete-btn:disabled {
   cursor: not-allowed;
 }
 
+.edit-btn:disabled:hover,
 .delete-btn:disabled:hover { color: var(--muted); }
+
+.task-item.editing {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.edit-form input[type="text"],
+.edit-form input[type="datetime-local"] {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.edit-text-input { width: 100%; }
+
+.edit-actions {
+  justify-content: flex-end;
+}
+
+.save-btn,
+.cancel-btn {
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.save-btn {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.save-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
 
 .spinner {
   display: inline-block;
