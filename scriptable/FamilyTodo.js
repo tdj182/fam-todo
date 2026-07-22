@@ -9,35 +9,65 @@
 // 5. Long-press your home screen -> + -> search "Scriptable" -> add a
 //    widget -> tap it -> set Script to "Family Todo" and
 //    "When Interacting" to "Run Script".
+//
+// Backend: talks directly to Supabase's REST API (PostgREST) using the
+// public anon key. Standard task CRUD has no login wall (see
+// johnson-family-webapps/docs/supabase-personal-backend-brief_1.md,
+// section 6.1) -- same trust model as the old shared-secret-token setup
+// this replaces, just against public.todo_tasks instead of a Google Sheet.
 
-const BASE_URL = "https://script.google.com/macros/s/AKfycbxCW36ESXwaoJHZmOXRJsJ6fc0hme6TInILJO01mvZ4r2LkpoUtfLdVeTx15dB7xrAduQ/exec";
-const TOKEN = "7wheW5VA4Wyxx_8XnUg1wEtIZ1PbQCVX";
-const WEBSITE_URL = "https://tdj182.github.io/fam-todo/";
+const SUPABASE_URL = "https://xohawddgigksbckacfwe.supabase.co";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvaGF3ZGRnaWdrc2Jja2FjZndlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3MTU3MzAsImV4cCI6MjEwMDI5MTczMH0.EVxvQywfJjAge9xPBuI-qK-H47ZugHqBoUBbfcbk4ao";
+const WEBSITE_URL = "https://johnson-family-webapps.vercel.app/todo";
 const WHO_OPTIONS = ["Ty", "Kari", "Olivia", "family", "parents"];
 
-async function getTasks() {
-  const req = new Request(`${BASE_URL}?token=${encodeURIComponent(TOKEN)}`);
-  const data = await req.loadJSON();
-  if (data.error) throw new Error(data.error);
-  return data.tasks;
-}
+async function supabaseRequest(path, { method = "GET", body, prefer } = {}) {
+  const req = new Request(`${SUPABASE_URL}/rest/v1/${path}`);
+  req.method = method;
+  req.headers = {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    "Content-Type": "application/json",
+    ...(prefer ? { Prefer: prefer } : {}),
+  };
+  if (body !== undefined) req.body = JSON.stringify(body);
 
-async function post(body) {
-  const req = new Request(BASE_URL);
-  req.method = "POST";
-  req.headers = { "Content-Type": "text/plain;charset=utf-8" };
-  req.body = JSON.stringify({ token: TOKEN, ...body });
   const data = await req.loadJSON();
-  if (data.error) throw new Error(data.error);
+  const status = req.response.statusCode;
+  if (status < 200 || status >= 300) {
+    const message = data && data.message ? data.message : `HTTP ${status}`;
+    throw new Error(message);
+  }
   return data;
 }
 
-function isDone(task) {
-  return task.done === true || task.done === "TRUE" || task.done === "true";
+async function getTasks() {
+  return supabaseRequest("todo_tasks?select=*&order=created_at.asc");
+}
+
+async function createTask({ text, category, who, due_at }) {
+  await supabaseRequest("todo_tasks", {
+    method: "POST",
+    body: { text, category, who: who || null, due_at: due_at || null },
+    prefer: "return=minimal",
+  });
+}
+
+async function toggleTask(id, done) {
+  await supabaseRequest(`todo_tasks?id=eq.${id}`, {
+    method: "PATCH",
+    body: { done },
+    prefer: "return=minimal",
+  });
+}
+
+async function deleteTask(id) {
+  await supabaseRequest(`todo_tasks?id=eq.${id}`, { method: "DELETE", prefer: "return=minimal" });
 }
 
 function isOverdue(task) {
-  return !isDone(task) && task.due_at && new Date(task.due_at) < new Date();
+  return !task.done && task.due_at && new Date(task.due_at) < new Date();
 }
 
 function formatDue(iso) {
@@ -73,7 +103,7 @@ async function createWidget() {
   widget.addSpacer(6);
 
   const pending = tasks
-    .filter(t => !isDone(t))
+    .filter((t) => !t.done)
     .sort((a, b) => {
       const ad = a.due_at ? new Date(a.due_at).getTime() : Infinity;
       const bd = b.due_at ? new Date(b.due_at).getTime() : Infinity;
@@ -171,8 +201,8 @@ async function buildRows(reload) {
   };
   rows.push(addRow);
 
-  rows.push(...buildSection("Regular", tasks.filter(t => t.category === "regular"), reload));
-  rows.push(...buildSection("Big", tasks.filter(t => t.category === "big"), reload));
+  rows.push(...buildSection("Regular", tasks.filter((t) => t.category === "regular"), reload));
+  rows.push(...buildSection("Big", tasks.filter((t) => t.category === "big"), reload));
 
   return rows;
 }
@@ -185,7 +215,7 @@ function buildSection(label, items, reload) {
   header.addText(label);
   rows.push(header);
 
-  const sorted = items.slice().sort((a, b) => Number(isDone(a)) - Number(isDone(b)));
+  const sorted = items.slice().sort((a, b) => Number(a.done) - Number(b.done));
 
   if (sorted.length === 0) {
     const row = new UITableRow();
@@ -198,16 +228,15 @@ function buildSection(label, items, reload) {
     const row = new UITableRow();
     row.dismissOnSelect = false;
 
-    const done = isDone(task);
     const overdue = isOverdue(task);
 
-    const checkCell = row.addText(done ? "✅" : "⬜️");
+    const checkCell = row.addText(task.done ? "✅" : "⬜️");
     checkCell.widthWeight = 8;
 
     const metaParts = [task.who, task.due_at ? formatDue(task.due_at) : null].filter(Boolean);
     const textCell = row.addText(task.text, metaParts.join(" · "));
     textCell.widthWeight = 80;
-    if (done) {
+    if (task.done) {
       textCell.titleColor = Color.gray();
       textCell.subtitleColor = Color.gray();
     } else if (overdue) {
@@ -227,19 +256,26 @@ function buildSection(label, items, reload) {
 }
 
 async function taskActionFlow(task) {
-  const done = isDone(task);
   const alert = new Alert();
   alert.title = task.text;
   alert.message = [task.who, task.due_at ? formatDue(task.due_at) : null].filter(Boolean).join(" · ");
-  alert.addAction(done ? "Mark Not Done" : "Mark Done");
+  alert.addAction(task.done ? "Mark Not Done" : "Mark Done");
   alert.addDestructiveAction("Delete");
   alert.addCancelAction("Cancel");
   const choice = await alert.presentSheet();
 
-  if (choice === 0) {
-    await post({ action: "toggle", id: task.id, done: !done });
-  } else if (choice === 1) {
-    await post({ action: "delete", id: task.id });
+  try {
+    if (choice === 0) {
+      await toggleTask(task.id, !task.done);
+    } else if (choice === 1) {
+      await deleteTask(task.id);
+    }
+  } catch (e) {
+    const errAlert = new Alert();
+    errAlert.title = "Action failed";
+    errAlert.message = e.message;
+    errAlert.addAction("OK");
+    await errAlert.presentAlert();
   }
 }
 
@@ -292,14 +328,7 @@ async function addTaskFlow() {
   }
 
   try {
-    await post({
-      action: "create",
-      id: Math.random().toString(36).slice(2, 10),
-      text,
-      category,
-      who,
-      due_at
-    });
+    await createTask({ text, category, who, due_at });
   } catch (e) {
     const errAlert = new Alert();
     errAlert.title = "Failed to add task";

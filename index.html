@@ -3,72 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Family Todo</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#5b7a5e">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css">
+<title>Family Todo — moved</title>
+<meta http-equiv="refresh" content="0; url=https://johnson-family-webapps.vercel.app/todo">
+<link rel="canonical" href="https://johnson-family-webapps.vercel.app/todo">
 </head>
 <body>
-<div class="app">
-  <header>
-    <h1>Family Todo</h1>
-    <button id="refresh-btn" title="Refresh">&#8635;</button>
-  </header>
-
-  <form id="add-form" class="add-form">
-    <input id="text-input" type="text" placeholder="Add a task..." required>
-
-    <div class="row">
-      <div class="category-toggle">
-        <button type="button" class="cat-btn active" data-category="regular">Regular</button>
-        <button type="button" class="cat-btn" data-category="big">Big</button>
-      </div>
-      <input id="due-input" type="datetime-local">
-    </div>
-
-    <div class="row who-row">
-      <div class="who-buttons" id="who-buttons">
-        <button type="button" class="who-btn" data-who="Ty">Ty</button>
-        <button type="button" class="who-btn" data-who="Kari">Kari</button>
-        <button type="button" class="who-btn" data-who="Olivia">Olivia</button>
-        <button type="button" class="who-btn" data-who="family">family</button>
-        <button type="button" class="who-btn" data-who="parents">parents</button>
-      </div>
-      <input id="who-input" type="text" placeholder="who? (or pick above)">
-    </div>
-
-    <button type="submit" class="add-btn">Add task</button>
-  </form>
-
-  <div class="filter-bar" id="filter-bar">
-    <button type="button" class="filter-btn active" data-who="">All</button>
-    <button type="button" class="filter-btn" data-who="Ty">Ty</button>
-    <button type="button" class="filter-btn" data-who="Kari">Kari</button>
-    <button type="button" class="filter-btn" data-who="Olivia">Olivia</button>
-    <button type="button" class="filter-btn" data-who="family">family</button>
-    <button type="button" class="filter-btn" data-who="parents">parents</button>
-  </div>
-
-  <section class="task-section">
-    <h2>Regular</h2>
-    <ul id="regular-list" class="task-list"></ul>
-  </section>
-
-  <section class="task-section">
-    <h2>Big</h2>
-    <ul id="big-list" class="task-list"></ul>
-  </section>
-
-</div>
-
-<script src="api.js"></script>
-<script src="app.js"></script>
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
-}
-</script>
+<p>This app has moved. Redirecting to <a href="https://johnson-family-webapps.vercel.app/todo">the new Family Todo</a>…</p>
 </body>
 </html>
