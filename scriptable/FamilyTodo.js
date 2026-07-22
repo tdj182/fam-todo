@@ -43,13 +43,16 @@ async function supabaseRequest(path, { method = "GET", body, prefer } = {}) {
 }
 
 async function getTasks() {
-  return supabaseRequest("todo_tasks?select=*&order=created_at.asc");
+  return supabaseRequest("todo_tasks?select=*&order=position.asc");
 }
 
-async function createTask({ text, category, who, due_at }) {
+async function createTask({ text, who, due_at }) {
+  const last = await supabaseRequest("todo_tasks?select=position&order=position.desc&limit=1");
+  const position = last.length ? last[0].position + 1 : 0;
+
   await supabaseRequest("todo_tasks", {
     method: "POST",
-    body: { text, category, who: who || null, due_at: due_at || null },
+    body: { text, who: who || null, due_at: due_at || null, position },
     prefer: "return=minimal",
   });
 }
@@ -201,19 +204,13 @@ async function buildRows(reload) {
   };
   rows.push(addRow);
 
-  rows.push(...buildSection("Regular", tasks.filter((t) => t.category === "regular"), reload));
-  rows.push(...buildSection("Big", tasks.filter((t) => t.category === "big"), reload));
+  rows.push(...buildSection(tasks, reload));
 
   return rows;
 }
 
-function buildSection(label, items, reload) {
+function buildSection(items, reload) {
   const rows = [];
-
-  const header = new UITableRow();
-  header.isHeader = true;
-  header.addText(label);
-  rows.push(header);
 
   const sorted = items.slice().sort((a, b) => Number(a.done) - Number(b.done));
 
@@ -290,12 +287,6 @@ async function addTaskFlow() {
   const text = textAlert.textFieldValue(0).trim();
   if (!text) return;
 
-  const catAlert = new Alert();
-  catAlert.title = "Category";
-  catAlert.addAction("Regular");
-  catAlert.addAction("Big");
-  const category = (await catAlert.presentSheet()) === 1 ? "big" : "regular";
-
   const whoAlert = new Alert();
   whoAlert.title = "Who?";
   for (const w of WHO_OPTIONS) whoAlert.addAction(w);
@@ -328,7 +319,7 @@ async function addTaskFlow() {
   }
 
   try {
-    await createTask({ text, category, who, due_at });
+    await createTask({ text, who, due_at });
   } catch (e) {
     const errAlert = new Alert();
     errAlert.title = "Failed to add task";
